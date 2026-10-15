@@ -37,7 +37,9 @@ cat(format(n, format = "text"))
 \seealso{
 Other narrative:
 \code{\link[=generate_cohort_narrative]{generate_cohort_narrative()}},
+\code{\link[=generate_llm_narrative]{generate_llm_narrative()}},
 \code{\link[=generate_narrative]{generate_narrative()}},
+\code{\link[=narrative_facts]{narrative_facts()}},
 \code{\link[=select_cases]{select_cases()}}
 }
 \concept{narrative}

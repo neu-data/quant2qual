@@ -153,6 +153,12 @@ neudata_html <- function(toc = TRUE, ...) {
 #' @param toc Include a table of contents (HTML and PDF)?
 #' @param pdf_style `"style1"` or `"style2"`; see [neudata_pdf()].
 #' @param quiet Suppress rendering output?
+#' @param narrator `"rules"` (default) writes case narratives with
+#'   [generate_narrative()]; `"llm"` rewrites them with
+#'   [generate_llm_narrative()]. The cohort synthesis and methods are always
+#'   rule-based, and the methods section states which narrator was used.
+#' @param llm_args A list of further arguments for [generate_llm_narrative()]
+#'   when `narrator = "llm"`, e.g. `list(chat = ellmer::chat_ollama(...))`.
 #'
 #' @return For `format = "markdown"` with `file = NULL`, the Markdown text
 #'   (a character string). Otherwise the path to the written file,
@@ -185,8 +191,13 @@ write_behavioral_report <- function(profile, file = NULL,
                                     confidentiality = NULL,
                                     include_cohort = TRUE, include_figures = TRUE,
                                     include_methods = TRUE, toc = TRUE,
-                                    pdf_style = c("style1", "style2"), quiet = TRUE) {
+                                    pdf_style = c("style1", "style2"), quiet = TRUE,
+                                    narrator = c("rules", "llm"), llm_args = list()) {
   check_profile(profile)
+  narrator <- rlang::arg_match(narrator)
+  if (!is.list(llm_args)) {
+    q2q_abort("{.arg llm_args} must be a list.", class = "quant2qual_type_error")
+  }
   format <- rlang::arg_match(format)
   strategy <- rlang::arg_match(strategy)
   style <- rlang::arg_match(style)
@@ -237,7 +248,8 @@ write_behavioral_report <- function(profile, file = NULL,
                       include_methods = include_methods,
                       figures = figures, fig_dir = if (figures) fig_dir,
                       fig_ref = if (figures) fig_ref, fig_ext = fig_ext,
-                      callout_target = callout_target)
+                      callout_target = callout_target,
+                      narrator = narrator, llm_args = llm_args)
 
   if (format == "markdown") {
     md <- paste(c(paste("#", title), "", paste0("*", subtitle, "*"), "", body), collapse = "\n")
@@ -283,7 +295,8 @@ write_behavioral_report <- function(profile, file = NULL,
 
 #' @noRd
 report_body <- function(profile, ids, style, lx, meta, include_cohort, include_methods,
-                        figures, fig_dir, fig_ref, fig_ext, callout_target) {
+                        figures, fig_dir, fig_ref, fig_ext, callout_target,
+                        narrator = "rules", llm_args = list()) {
   out <- character()
   if (figures) dir.create(fig_dir, showWarnings = FALSE, recursive = TRUE)
   fig <- function(plot, name, caption, width = 7, height = 4.6, out_width = "95%") {
@@ -335,8 +348,16 @@ report_body <- function(profile, ids, style, lx, meta, include_cohort, include_m
                          "Each narrative is generated from the case's own statistics and",
                          "compares it with the cohort of %s %s."),
                    fmt_num(meta$n_complete), lx$subject_plural), "")
-  narr <- generate_narrative(profile, ids, style = style, lexicon = lx)
+  narr <- if (narrator == "llm") {
+    do.call(generate_llm_narrative,
+            c(list(profile = profile, id = ids, style = style, lexicon = lx), llm_args))
+  } else {
+    generate_narrative(profile, ids, style = style, lexicon = lx)
+  }
   if (inherits(narr, "q2q_narrative")) narr <- structure(list(narr), class = "q2q_narrative_set")
+  llm_models <- unique(stats::na.omit(unlist(lapply(narr, function(n) {
+    if (identical(n$engine, "llm")) n$model else NA_character_
+  }))))
   for (k in seq_along(narr)) {
     n <- narr[[k]]
     text <- format(n, heading_level = 2)
@@ -353,7 +374,7 @@ report_body <- function(profile, ids, style, lx, meta, include_cohort, include_m
   }
 
   if (include_methods) {
-    out <- c(out, methods_section(profile, meta, lx, callout_target))
+    out <- c(out, methods_section(profile, meta, lx, callout_target, llm_models))
   }
   out
 }
@@ -394,7 +415,7 @@ callout <- function(title, lines, target, env = "keyfindings") {
 }
 
 #' @noRd
-methods_section <- function(profile, meta, lx, target) {
+methods_section <- function(profile, meta, lx, target, llm_models = character()) {
   dims <- q2q_dimensions()
   cols <- meta$columns
   scaling_txt <- switch(meta$scaling,
@@ -446,11 +467,25 @@ methods_section <- function(profile, meta, lx, target) {
     ": Band edges expressed in raw units.", "",
     md_table(matrix_tab), "",
     ": The archetype matrix. Rules list the bands each dimension may fall in; the last row is the fallback.", "",
-    callout("Reproducibility", md_escape(sprintf(paste(
+    callout("Reproducibility", md_escape(reproducibility_note(version, llm_models)),
+            target, "neudatanote"), "")
+}
+
+#' @noRd
+reproducibility_note <- function(version, llm_models = character()) {
+  if (length(llm_models) == 0L) {
+    return(sprintf(paste(
       "Narratives were assembled by rule-based templating from each case's own statistics with",
       "quant2qual %s. No generative language model was used: the same data and settings always produce",
-      "the same text, and every number quoted in a narrative can be traced to the profile table."), version)),
-      target, "neudatanote"), "")
+      "the same text, and every number quoted in a narrative can be traced to the profile table."), version))
+  }
+  sprintf(paste(
+    "Case narratives were drafted by rule-based templating with quant2qual %s and then rewritten by",
+    "%s through the ellmer package. The model received only a fact sheet of the case's derived",
+    "statistics and the draft, was instructed to cite no other numbers, and every number in its output",
+    "was checked against that fact sheet. The cohort synthesis and this methods section are rule-based.",
+    "Rewritten text can vary between runs; the rule-based drafts are reproducible."),
+    version, collapse_and(llm_models))
 }
 
 # ---- small writers -------------------------------------------------------------------

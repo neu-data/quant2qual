@@ -1,3 +1,15 @@
+# quant2qual 0.2.0
+
+* New `generate_llm_narrative()` rewrites the rule-based case narratives with a
+  large language model through 'ellmer'. By default it uses Claude
+  (`claude-opus-5-5`, adaptive thinking, server-side refusal fallback); any
+  ellmer chat, including local models, can be passed instead. The model is
+  grounded in a per-case fact sheet (`narrative_facts()`), returns the usual
+  five sections through structured output, and every number it writes is
+  checked against the facts. Failed calls fall back to the rule-based text.
+* `write_behavioral_report()` gains `narrator = "llm"` and `llm_args`; the
+  methods section records which narrator and model wrote the case studies.
+
 # quant2qual 0.1.0
 
 First release.

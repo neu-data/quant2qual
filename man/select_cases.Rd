@@ -43,6 +43,8 @@ select_cases(profile, n = 2, strategy = "extreme")
 Other narrative:
 \code{\link[=format.q2q_narrative]{format.q2q_narrative()}},
 \code{\link[=generate_cohort_narrative]{generate_cohort_narrative()}},
-\code{\link[=generate_narrative]{generate_narrative()}}
+\code{\link[=generate_llm_narrative]{generate_llm_narrative()}},
+\code{\link[=generate_narrative]{generate_narrative()}},
+\code{\link[=narrative_facts]{narrative_facts()}}
 }
 \concept{narrative}

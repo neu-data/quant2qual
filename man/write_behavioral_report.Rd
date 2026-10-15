@@ -23,7 +23,9 @@ write_behavioral_report(
   include_methods = TRUE,
   toc = TRUE,
   pdf_style = c("style1", "style2"),
-  quiet = TRUE
+  quiet = TRUE,
+  narrator = c("rules", "llm"),
+  llm_args = list()
 )
 }
 \arguments{
@@ -53,6 +55,14 @@ synthesis, the figures and the methods section?}
 \item{pdf_style}{\code{"style1"} or \code{"style2"}; see \code{\link[=neudata_pdf]{neudata_pdf()}}.}
 
 \item{quiet}{Suppress rendering output?}
+
+\item{narrator}{\code{"rules"} (default) writes case narratives with
+\code{\link[=generate_narrative]{generate_narrative()}}; \code{"llm"} rewrites them with
+\code{\link[=generate_llm_narrative]{generate_llm_narrative()}}. The cohort synthesis and methods are always
+rule-based, and the methods section states which narrator was used.}
+
+\item{llm_args}{A list of further arguments for \code{\link[=generate_llm_narrative]{generate_llm_narrative()}}
+when \code{narrator = "llm"}, e.g. \code{list(chat = ellmer::chat_ollama(...))}.}
 }
 \value{
 For \code{format = "markdown"} with \code{file = NULL}, the Markdown text

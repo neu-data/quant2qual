@@ -48,3 +48,16 @@ jobs:
         with:
           upload-snapshots: true
           args: 'c("--no-manual", "--as-cran")'
+
+      # Job logs are only visible to signed-in users; annotations show on the
+      # run summary for anyone. On failure, post the tail of the check log and
+      # of any failed test output there, so the error is readable at a glance.
+      - name: Show check failures on the run summary
+        if: failure()
+        shell: bash
+        run: |
+          escape() { tr -d '\r' | sed -e 's/%/%25/g' | awk 'BEGIN { ORS = "%0A" } { print }'; }
+          find check -type f \( -name '00check.log' -o -name '00install.out' -o -name '*.Rout.fail' \) 2>/dev/null |
+            while read -r f; do
+              echo "::error title=${{ matrix.config.os }} (${{ matrix.config.r }}) ${f#check/}::$(tail -n 150 "$f" | escape)"
+            done

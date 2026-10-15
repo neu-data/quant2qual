@@ -474,6 +474,14 @@ print.q2q_narrative <- function(x, ...) {
     sub <- x$subtitle
     cl <- sprintf("confidence %s (%.2f)", confidence_label(x$confidence), x$confidence)
     cli::cli_text("{.emph {sub}} \u00B7 {.field {cl}}")
+    if (identical(x$engine, "llm")) {
+      mdl <- x$model %||% "a language model"
+      cli::cli_text("{.emph Written by {mdl} from the rule-based fact sheet.}")
+      if (length(x$ungrounded) > 0L) {
+        ug <- x$ungrounded
+        cli::cli_alert_warning("Numbers not in the fact sheet: {.val {ug}}")
+      }
+    }
     for (nm in names(x$sections)) {
       body <- x$sections[[nm]]
       ttl <- st[[nm]]

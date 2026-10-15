@@ -111,6 +111,29 @@ write_behavioral_report(profile, file = "study.pdf", format = "pdf",
                         title = "Checkout usability study", client = "Example Ltd")
 ```
 
+## Optional: LLM narratives
+
+The rule-based narrator is the default and needs nothing external. For more
+varied prose, `generate_llm_narrative()` hands each case's fact sheet and
+rule-based draft to a language model through
+[ellmer](https://ellmer.tidyverse.org) and gets the same five sections back:
+
+```r
+# Claude by default (needs ANTHROPIC_API_KEY)
+generate_llm_narrative(profile, id = 294)
+
+# or any ellmer chat, including a local model
+generate_llm_narrative(profile, id = 294, chat = ellmer::chat_ollama(model = "llama3.2"))
+
+# in a report; the methods section records the narrator and model
+write_behavioral_report(profile, format = "pdf", narrator = "llm")
+```
+
+The model sees only the case's derived statistics (`narrative_facts(profile, 294)`
+shows exactly what is sent), is told to cite nothing else, and every number in
+its output is checked against the fact sheet. If a call fails, the rule-based
+narrative is used instead.
+
 ## The archetype matrix
 
 Three dimensions, standardised against the cohort so that "high" always means

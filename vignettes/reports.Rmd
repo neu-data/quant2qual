@@ -84,6 +84,27 @@ client: "Example Ltd"
 confidentiality: "Internal"
 ```
 
+## LLM narratives
+
+`narrator = "llm"` rewrites the case studies with `generate_llm_narrative()`
+while keeping the cohort synthesis and methods rule-based. The fact sheet sent
+for each case can be inspected first:
+
+```{r facts}
+narrative_facts(profile, 104)
+```
+
+```{r llm, eval = FALSE}
+write_behavioral_report(profile, file = "study.pdf", format = "pdf",
+                        narrator = "llm",
+                        llm_args = list(reasoning_effort = "medium",
+                                        instructions = "Write for a product manager."))
+```
+
+Numbers in the generated text that are not in the fact sheet are reported as a
+warning and kept in `$ungrounded` on each narrative, and the rule-based draft
+stays available in `$draft`.
+
 ## The R Markdown template
 
 In RStudio, **File > New File > R Markdown > From Template > quant2qual

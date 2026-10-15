@@ -64,6 +64,8 @@ generate_narrative(profile, id = select_cases(profile), style = "brief")
 Other narrative:
 \code{\link[=format.q2q_narrative]{format.q2q_narrative()}},
 \code{\link[=generate_cohort_narrative]{generate_cohort_narrative()}},
+\code{\link[=generate_llm_narrative]{generate_llm_narrative()}},
+\code{\link[=narrative_facts]{narrative_facts()}},
 \code{\link[=select_cases]{select_cases()}}
 }
 \concept{narrative}

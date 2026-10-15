@@ -67,6 +67,8 @@ reference:
       - select_cases
       - generate_narrative
       - generate_cohort_narrative
+      - generate_llm_narrative
+      - narrative_facts
       - format.q2q_narrative
   - title: Report
     contents:
