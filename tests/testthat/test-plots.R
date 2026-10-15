@@ -4,13 +4,23 @@ test_that("plots build without warnings", {
   path <- withr::local_tempfile(fileext = ".pdf")
   grDevices::pdf(path)
   on.exit(grDevices::dev.off(), add = TRUE)
-  for (g in list(plot_archetype_map(p),
-                 plot_archetype_map(p, "intensity", "friction", highlight = p$user_id[1:2]),
-                 plot_archetype_signatures(p),
-                 plot_case_profile(p, p$user_id[1]),
-                 plot_q2q_pipeline())) {
+  plots <- list(
+    map = plot_archetype_map(p),
+    map_highlight = plot_archetype_map(p, "intensity", "friction", highlight = p$user_id[1:2]),
+    signatures = plot_archetype_signatures(p),
+    case = plot_case_profile(p, p$user_id[1]),
+    pipeline = plot_q2q_pipeline()
+  )
+  for (nm in names(plots)) {
+    g <- plots[[nm]]
     expect_s3_class(g, "ggplot")
-    expect_silent(print(g))
+    expect_no_warning(print(g), message = NULL)
+    # The base pdf device on Linux and macOS is Latin-1 and warns on text it
+    # cannot encode, while Windows (CP1252) draws the same text silently, so
+    # the warning check above cannot catch it here. Keep labels ASCII.
+    labs <- unlist(g$labels[vapply(g$labels, is.character, logical(1))])
+    expect_false(any(grepl("[^\\x01-\\x7F]", labs, perl = TRUE)),
+                 label = paste(nm, "has non-ASCII labels"))
   }
 })
 

@@ -194,7 +194,9 @@ plot_case_profile <- function(profile, id, base_size = 10) {
                        size = base_size / 3.3, colour = "#04242F") +
     ggplot2::geom_vline(xintercept = 0, colour = "#04242F", linewidth = 0.3) +
     ggplot2::labs(x = "Standardised score (z); shaded: mid band", y = NULL,
-                  title = sprintf("#%s \u2014 %s", id, row$archetype)) +
+                  # ASCII only: the base pdf device on Linux and macOS uses
+                  # Latin-1, which has no em dash, and warns on every draw.
+                  title = sprintf("#%s: %s", id, row$archetype)) +
     theme_neudata(base_size = base_size) +
     ggplot2::theme(panel.grid.major.y = ggplot2::element_blank(),
                    plot.title = ggplot2::element_text(colour = colour, face = "bold"))
