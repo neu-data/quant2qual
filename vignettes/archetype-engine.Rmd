@@ -1,0 +1,142 @@
+---
+title: "Inside the archetype engine"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Inside the archetype engine}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.4)
+```
+
+```{r setup}
+library(quant2qual)
+users <- mock_behavioral_data(300, include_truth = TRUE)
+truth <- users$true_archetype
+users$true_archetype <- NULL
+```
+
+The engine does three things, in order: **scale**, **band** and **match**. Each
+choice is an argument, and each is recorded on the result so a report can state
+exactly how a case was classified.
+
+## Scale: relative to the cohort
+
+A friction count of 6 means something different in a cohort whose median is 1
+than in one whose median is 10. Every dimension is therefore standardised
+against the cohort it came from. Three scalings are available:
+
+| `scaling` | Centre | Spread | Use when |
+|---|---|---|---|
+| `"z"` | mean | SD | distributions are roughly symmetric |
+| `"robust"` | median | MAD (IQR/1.349 if the MAD is 0) | counts are skewed or have extreme cases |
+| `"percentile"` | rank | normal scores of mid-rank percentiles | you want no distributional assumption |
+
+`transform = "log1p"` is applied before scaling and suits durations and counts
+with a long right tail.
+
+```{r scaling}
+fits <- lapply(c("z", "robust", "percentile"), function(s) {
+  p <- identify_archetype(users, scaling = s)
+  data.frame(scaling = s, agreement_with_truth = mean(p$archetype == truth),
+             median_confidence = median(p$confidence))
+})
+do.call(rbind, fits)
+```
+
+## Band: low, mid and high
+
+By default a dimension is *high* above `+threshold` and *low* below `-threshold`
+on the standardised scale (`threshold = 0.5`). The threshold can differ by
+dimension, and any dimension can instead use fixed **raw-unit cutpoints**: here
+fewer than 2 errors is low friction and more than 8 is high, whatever the cohort
+looks like.
+
+```{r cutpoints}
+p <- identify_archetype(users, threshold = c(velocity = 0.6, intensity = 0.6),
+                        cutpoints = list(friction = c(2, 8)))
+table(p$level_friction, cut(p$error_count, c(-Inf, 1.5, 8, Inf)))
+```
+
+The band edges are stored in raw units too, which is what the methods section
+of a report quotes:
+
+```{r edges}
+sapply(attr(p, "q2q")$reference[c("velocity", "intensity", "friction")],
+       function(r) round(r$edges_raw, 1))
+```
+
+## Match: rules, membership and confidence
+
+An archetype is a set of allowed bands per dimension. The built-in UX matrix:
+
+```{r matrix}
+default_archetypes("ux")
+```
+
+Every case receives a **fuzzy membership** in every archetype. For each
+constrained dimension, membership is a logistic ramp equal to 0.5 exactly on a
+band edge and approaching 1 inside the allowed range (steepness `sharpness`);
+the dimensions are combined by geometric mean. The fallback archetype's
+membership is the membership of all three dimensions in the mid band.
+
+```{r membership}
+p <- identify_archetype(users)
+archetype_membership(p[1:5, ])
+```
+
+Two assignment rules use these memberships:
+
+* `method = "rules"` (default): the highest-priority archetype whose rule is met
+  exactly, else the fallback -- a transparent `case_when()` cascade.
+* `method = "fuzzy"`: the archetype with the highest membership.
+
+`confidence` is the membership of the assigned archetype. A case near a band
+edge gets a lower confidence and a named `runner_up`, and the narrative says so.
+
+```{r borderline}
+b <- select_cases(p, strategy = "borderline")[1]
+generate_narrative(p, b, style = "brief")
+```
+
+## Defining your own archetypes
+
+Rules accept single bands, adjacent combinations (`"low|mid"`,
+`c("mid", "high")`, `"not_low"`) or `"any"`. Text fields may use `{subject}` and
+`{Subject}`.
+
+```{r custom}
+m <- archetype_matrix(
+  define_archetype(
+    "Firefighter", velocity = "high", intensity = "high", friction = "high",
+    theme = "crisis-mode working",
+    persona = "A user fighting the product under time pressure.",
+    interpretation = "{Subject} is working hard against repeated failure.",
+    recommendations = c("Look for a single blocking defect on the critical path."),
+    colour = "#C0504D"
+  ),
+  define_archetype(
+    "Sprinter", velocity = "low", intensity = "high", friction = "not_high",
+    theme = "fast, confident completion", colour = "#055F56"
+  ),
+  define_archetype("Everyone else", fallback = TRUE, theme = "unremarkable behavior")
+)
+m
+custom <- identify_archetype(users, archetypes = m)
+summary(custom)
+```
+
+## Checking a matrix against ground truth
+
+With simulated data the planted signatures are known, so the matrix can be
+validated before it is used on real data:
+
+```{r truth}
+table(simulated = truth, classified = p$archetype)
+```
+
+On real data, `plot_archetype_signatures()` and the borderline cases from
+`select_cases(strategy = "borderline")` are the two most useful checks that the
+rules describe groups that genuinely differ.

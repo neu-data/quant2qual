@@ -1,0 +1,5 @@
+name: quant2qual behavioral report
+description: >
+  A Neudata-styled PDF case-study report built with quant2qual: classify a
+  behavioral dataset, then write the cohort synthesis and case narratives.
+create_dir: false

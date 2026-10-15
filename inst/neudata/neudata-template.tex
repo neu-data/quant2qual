@@ -1,0 +1,103 @@
+% ---------------------------------------------------------------------------
+% quant2qual: pandoc LaTeX template for the Neudata document class.
+% Used by quant2qual::neudata_pdf(); neudata.cls and neudata-logo.png are
+% copied next to the intermediate .tex file before LaTeX runs.
+% ---------------------------------------------------------------------------
+\documentclass[$for(classoption)$$classoption$$sep$,$endfor$]{neudata}
+\usepackage{amsmath,amssymb}
+% A real T1 monospace face for function names (Inconsolata, else Latin Modern)
+\IfFileExists{zi4.sty}{\usepackage[scaled=0.9,varqu]{zi4}}{\renewcommand{\ttdefault}{lmtt}}
+\usepackage{etoolbox}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{}
+\urlstyle{same}
+$if(numbersections)$
+\setcounter{secnumdepth}{3}
+$else$
+\setcounter{secnumdepth}{-\maxdimen}
+$endif$
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+$if(tables)$
+\usepackage{longtable,booktabs,array}
+\newcounter{none}
+\usepackage{calc}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+% Neudata look for pandoc pipe tables: navy rules, striped body
+\setlength{\LTpre}{0.6em}\setlength{\LTpost}{0.8em}
+\AtBeginEnvironment{longtable}{\small\rowcolors{2}{white}{NeudataMist}}
+$endif$
+\makeatletter
+\newsavebox\pandoc@box
+\providecommand*\pandocbounded[1]{%
+  \sbox\pandoc@box{#1}%
+  \Gscale@div\@tempa{\textheight}{\dimexpr\ht\pandoc@box+\dp\pandoc@box\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\pandoc@box}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\pandoc@box}%
+  \else\usebox{\pandoc@box}%
+  \fi}
+\makeatother
+% Figures stay where the text puts them: a case's fingerprint belongs to that case.
+\usepackage{float}
+\makeatletter\def\fps@figure{H}\makeatother
+% Keep paragraph spacing inside key-finding and note boxes
+\tcbset{before upper={\setlength{\parskip}{0.5em}}}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setlength{\emergencystretch}{3em}
+$for(header-includes)$
+$header-includes$
+$endfor$
+
+\logo{neudata-logo.png}
+\title{$if(title)$$title$$else$Behavioral narrative report$endif$}
+$if(subtitle)$
+\subtitle{$subtitle$}
+$endif$
+\author{$for(author)$$author$$sep$, $endfor$}
+$if(affiliation)$
+\affiliation{$affiliation$}
+$endif$
+$if(client)$
+\client{$client$}
+$endif$
+$if(reference)$
+\reference{$reference$}
+$endif$
+$if(version)$
+\version{$version$}
+$endif$
+$if(confidentiality)$
+\confidentiality{$confidentiality$}
+$endif$
+$if(date)$
+\date{$date$}
+$endif$
+$if(abstract)$
+\abstract{$abstract$}
+$endif$
+\hypersetup{pdftitle={$title-meta$}, pdfauthor={$author-meta$}, pdfcreator={quant2qual via pandoc}}
+
+\begin{document}
+\maketitle
+$for(include-before)$
+$include-before$
+$endfor$
+$if(toc)$
+\setcounter{tocdepth}{$if(toc-depth)$$toc-depth$$else$2$endif$}
+\tableofcontents
+\clearpage
+$endif$
+$body$
+$for(include-after)$
+$include-after$
+$endfor$
+$if(copyright-page)$
+\neudatacopyrightpage
+$endif$
+\end{document}

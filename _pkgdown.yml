@@ -1,0 +1,87 @@
+url: https://neu-data.github.io/quant2qual/
+
+template:
+  bootstrap: 5
+  bslib:
+    primary: "#055F56"
+    secondary: "#0B376C"
+    navbar-bg: "#04242F"
+    link-color: "#0B376C"
+    headings-color: "#04242F"
+    base_font: {google: "Source Sans 3"}
+    heading_font: {google: "Source Sans 3"}
+    code_font: {google: "JetBrains Mono"}
+
+navbar:
+  bg: primary
+  type: dark
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, neudata, github]
+  components:
+    neudata:
+      icon: fa-globe
+      href: https://www.neu-data.com
+      aria-label: Neudata website
+
+footer:
+  structure:
+    left: neudata
+    right: built_with
+  components:
+    neudata: "Developed by [**Neudata Consulting Ltd**](https://www.neu-data.com) · *Insight. Impact. Innovation.*"
+
+home:
+  sidebar:
+    structure: [links, license, community, citation, authors, dev]
+
+articles:
+  - title: Guides
+    navbar: ~
+    contents:
+      - archetype-engine
+      - domains
+      - reports
+
+reference:
+  - title: Configure
+    desc: Describe the domain once.
+    contents:
+      - q2q_dimensions
+      - q2q_domains
+      - q2q_lexicon
+      - default_archetypes
+      - define_archetype
+      - archetype_matrix
+  - title: Classify
+    desc: Scale, band and match every case.
+    contents:
+      - mock_behavioral_data
+      - identify_archetype
+      - archetype_summary
+      - archetype_membership
+      - as.data.frame.q2q_profile
+  - title: Narrate
+    desc: Case studies and the cohort synthesis.
+    contents:
+      - select_cases
+      - generate_narrative
+      - generate_cohort_narrative
+      - format.q2q_narrative
+  - title: Report
+    contents:
+      - write_behavioral_report
+      - neudata_pdf
+      - neudata_html
+  - title: Figures
+    contents:
+      - starts_with("plot_")
+      - archetype_palette
+      - q2q_pipeline
+  - title: Neudata look and feel
+    contents:
+      - neudata_palette
+      - theme_neudata
+  - title: Package
+    contents:
+      - quant2qual-package

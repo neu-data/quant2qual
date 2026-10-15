@@ -1,0 +1,50 @@
+Package: quant2qual
+Title: The Automated Behavioral Narrator: Turn Behavioral Metrics into
+    Qualitative Case-Study Prose
+Version: 0.1.0
+Authors@R: c(
+    person("Bernard Isekah", "Osangir", , "b.osangir@gmail.com", role = c("aut", "cre")),
+    person("Neudata Consulting Ltd", role = c("cph", "fnd"))
+  )
+Description: Bridges quantitative behavioral data and qualitative case-study
+    reporting. Numeric distributions of time, activity and friction (for
+    example clickstreams, app metrics, learning-platform logs or survey
+    paradata) are standardised against their own cohort, banded with
+    user-defined or distribution-based thresholds, and mapped onto a
+    configurable matrix of behavioral archetypes with rule-based or fuzzy
+    membership and an explicit classification confidence. A rule-based,
+    fully local narrative engine then translates each profile into
+    clinical, user-experience or brief analytical prose that cites its own
+    evidence (percentiles, cohort ratios, outliers) and states its own
+    uncertainty. Cohort narratives and complete case-study reports can be
+    written as Markdown, R Markdown or Quarto sources, or rendered to HTML
+    and to PDF in the Neudata house style. No external API is required.
+License: MIT + file LICENSE
+URL: https://neu-data.github.io/quant2qual/, https://github.com/neu-data/quant2qual
+BugReports: https://github.com/neu-data/quant2qual/issues
+Depends:
+    R (>= 4.1)
+Imports:
+    cli (>= 3.6.0),
+    dplyr (>= 1.1.0),
+    ggplot2 (>= 3.4.0),
+    grDevices,
+    grid,
+    purrr (>= 1.0.0),
+    rlang (>= 1.1.0),
+    stats,
+    tibble,
+    tidyr (>= 1.3.0),
+    tools,
+    utils
+Suggests:
+    knitr,
+    ragg,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    withr
+VignetteBuilder: knitr
+Config/testthat/edition: 3
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+Config/roxygen2/version: 8.0.0

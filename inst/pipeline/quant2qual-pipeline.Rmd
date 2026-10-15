@@ -1,0 +1,211 @@
+---
+title: "The quant2qual pipeline"
+subtitle: "From numeric distributions to qualitative case studies, one stage at a time"
+author: "Neudata Consulting Ltd"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+reference: "quant2qual pipeline guide"
+abstract: "quant2qual translates behavioral metrics (time, activity and friction) into case-study prose. This guide walks through the four stages of the workflow on the synthetic cohort shipped with the package: configure the domain, classify every case against an archetype matrix, narrate the cases and the cohort, and compile the report. Every figure and table is produced by the function named beside it, so each page can be reproduced in one line."
+output:
+  quant2qual::neudata_pdf:
+    toc: true
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,
+                      fig.align = "center", dpi = 300)
+library(quant2qual)
+# LaTeX tables in the Neudata look: navy header row, striped body (the class
+# stripes every tabular). Cell text is escaped here; captions are written
+# already escaped.
+esc <- function(v) gsub("([&%$#_{}])", "\\\\\\1", as.character(v))
+tab <- function(x, caption) {
+  x[] <- lapply(x, esc)
+  out <- knitr::kable(x, format = "latex", booktabs = TRUE, linesep = "",
+                      caption = caption, escape = FALSE,
+                      col.names = paste0("\\neudatath{", esc(names(x)), "}"))
+  out <- sub("\\begin{table}", "\\begin{table}[H]\\small", out, fixed = TRUE)
+  sub("\\toprule", "\\toprule\n\\neudataheader", out, fixed = TRUE)
+}
+users <- mock_behavioral_data(240, include_truth = TRUE)
+truth <- users$true_archetype
+users$true_archetype <- NULL
+profile <- identify_archetype(users)
+```
+
+# The shape of the workflow
+
+```{r diagram, fig.width = 10, fig.height = 5.6, out.width = "100%", fig.cap = "The four stages: plot\\_q2q\\_pipeline()"}
+plot_q2q_pipeline(base_size = 13, title = NULL, subtitle = NULL)
+```
+
+Read it top to bottom. The first row is configuration: **the domain is
+described once**, as a lexicon (what the subject, the dimensions and their units
+are called) and an archetype matrix (which behavioral signatures exist). Every
+later call reads those two objects, which is why the same script can narrate a
+usability study, a course or a survey without editing a single function. The
+outlined boxes are optional.
+
+```{r pipeline-table, results = "asis"}
+p <- q2q_pipeline()
+cat(tab(data.frame(Stage = p$stage, Function = p$fn,
+                   Required = ifelse(p$optional, "optional", "required"),
+                   `What it does` = p$caption, check.names = FALSE),
+        "The pipeline as a table: q2q\\_pipeline()"))
+```
+
+\newpage
+
+# Configure: describe the domain once
+
+Every dataset is read on three behavioral dimensions. The lexicon names them in
+the language of the domain; the engine never sees the names, only the numbers.
+
+```{r dimensions, results = "asis"}
+dims <- q2q_dimensions()
+rows <- lapply(q2q_domains()$domain, function(d) {
+  lx <- q2q_lexicon(d)
+  data.frame(Domain = d, Subject = lx$subject_short,
+             Velocity = lx$dimensions$velocity$noun,
+             Intensity = lx$dimensions$intensity$noun,
+             Friction = lx$dimensions$friction$noun)
+})
+cat(tab(do.call(rbind, rows), "Three domain packs, one geometry: q2q\\_lexicon()"))
+```
+
+The **archetype matrix** lists the signatures and the bands each dimension must
+fall in. Friction-led signatures are checked first, then the four time/activity
+quadrants, and whatever matches nothing goes to the cohort-typical fallback.
+
+```{r matrix, results = "asis"}
+am <- default_archetypes("ux")
+cat(tab(data.frame(Archetype = am$archetype,
+                   Velocity = ifelse(am$fallback, "--", am$velocity),
+                   Intensity = ifelse(am$fallback, "--", am$intensity),
+                   Friction = ifelse(am$fallback, "--", am$friction),
+                   Theme = am$theme),
+        "The UX archetype matrix: default\\_archetypes(\"ux\")"))
+```
+
+New signatures are added with `define_archetype()` and combined with
+`archetype_matrix()`; each carries its own persona, headline, interpretation
+and recommendations, so the narrative engine needs no further configuration.
+
+\newpage
+
+# Classify: scale, band, match
+
+`identify_archetype()` standardises every dimension against the cohort,
+cuts it into low, mid and high bands, and matches each case to an archetype.
+Because the bands are relative, "high friction" automatically rescales to
+whatever dataset is plugged in -- unless fixed raw-unit `cutpoints` are given.
+
+```{r bands, results = "asis"}
+ref <- attr(profile, "q2q")$reference
+lx <- q2q_lexicon("ux")
+cat(tab(data.frame(
+  Dimension = vapply(dims, function(d) lx$dimensions[[d]]$label, ""),
+  Median = vapply(dims, function(d) format(round(ref[[d]]$median, 1)), ""),
+  `Low band` = vapply(dims, function(d) sprintf("< %.1f", ref[[d]]$edges_raw[1]), ""),
+  `High band` = vapply(dims, function(d) sprintf("> %.1f", ref[[d]]$edges_raw[2]), ""),
+  check.names = FALSE, row.names = NULL),
+  "Band edges in raw units at +/- 0.5 SD: identify\\_archetype()"))
+```
+
+```{r map, fig.width = 7.5, fig.height = 5, out.width = "88%", fig.cap = "Where every case sits: plot\\_archetype\\_map()"}
+plot_archetype_map(profile, highlight = select_cases(profile)[1:2])
+```
+
+Every case also receives a **fuzzy membership** in every archetype -- a smooth
+version of "inside the allowed bands", 0.5 exactly on a band edge. The
+membership of the assigned archetype is the case's **confidence**; the
+next-best archetype is its **runner-up**. On this synthetic cohort the planted
+signatures are known, so the classifier can be checked directly: it recovers
+`r sprintf("%.0f%%", 100 * mean(profile$archetype == truth))` of them.
+
+```{r signatures, fig.width = 7.5, fig.height = 3.4, out.width = "88%", fig.cap = "What makes each archetype distinctive: plot\\_archetype\\_signatures()"}
+plot_archetype_signatures(profile)
+```
+
+\newpage
+
+# Narrate: cases and cohort
+
+`generate_narrative()` writes a case study from the case's own statistics.
+Sentences are assembled from templates whose slots are filled with percentiles,
+cohort ratios and standardised scores, ordered by salience and stitched with
+connectors that follow the direction of the data. Phrasing varies between cases
+but is fixed for each one: the same data always produce the same text.
+
+```{r case-plot, fig.width = 7, fig.height = 2.5, out.width = "85%", fig.cap = "One case against the cohort: plot\\_case\\_profile()"}
+case <- select_cases(profile, archetypes = "Frustrated Fighter")
+plot_case_profile(profile, case)
+```
+
+```{r case, results = "asis"}
+n <- generate_narrative(profile, case, style = "clinical")
+md <- format(n, heading_level = 2)
+md <- sub("^## [^\n]*\n\n", "", md)
+cat("```{=latex}\n\\begin{neudatanote}[", gsub("#", "\\#", n$title, fixed = TRUE),
+    " -- generate\\_narrative()]\n```\n\n", md,
+    "\n\n```{=latex}\n\\end{neudatanote}\n```\n", sep = "")
+```
+
+The same case in the other two registers:
+
+```{r registers, results = "asis"}
+b <- generate_narrative(profile, case, style = "brief")
+cat("**Brief.** ", b$sections$summary, "\n\n", sep = "")
+u <- generate_narrative(profile, case, style = "ux")
+cat("**UX, recommended actions.**\n\n", paste0("- ", u$sections$implications, collapse = "\n"),
+    "\n", sep = "")
+```
+
+\newpage
+
+`generate_cohort_narrative()` writes the synthesis that opens a report: the
+distribution of archetypes, the friction-led share, how concentrated friction
+is, how the dimensions relate, and how cleanly the cohort was classified.
+
+```{r cohort, results = "asis"}
+cn <- generate_cohort_narrative(profile)
+cat("```{=latex}\n\\begin{keyfindings}[Cohort synthesis -- generate\\_cohort\\_narrative()]\n```\n\n",
+    paste(cn$sections, collapse = "\n\n"),
+    "\n\n```{=latex}\n\\end{keyfindings}\n```\n", sep = "")
+```
+
+`select_cases()` chooses which cases to narrate: the clearest example of each
+archetype (`"representative"`), the most pronounced (`"extreme"`), or the cases
+sitting between signatures (`"borderline"`), which are the best audit of a
+matrix.
+
+# Report: one call, five formats
+
+```{r formats, results = "asis"}
+cat(tab(data.frame(
+  Format = c("markdown", "rmd", "qmd", "html", "pdf"),
+  Output = c("pandoc Markdown text or file", "R Markdown source using neudata_pdf",
+             "Quarto source (HTML and PDF)", "self-contained HTML, Neudata palette",
+             "PDF in the Neudata LaTeX house style"),
+  Needs = c("nothing", "nothing", "nothing", "pandoc", "pandoc and LaTeX")),
+  "Report targets: write\\_behavioral\\_report()"))
+```
+
+```{r report-call, echo = TRUE, eval = FALSE}
+write_behavioral_report(profile, file = "study.pdf", format = "pdf",
+                        title = "Checkout usability study",
+                        client = "Example Ltd", confidentiality = "Confidential")
+```
+
+A report contains key findings, the cohort synthesis with its figures and
+archetype portraits, a case study per selected case with its fingerprint chart,
+and a methods section written from the classification settings -- the scaling,
+the band edges in raw units and the full archetype matrix. This guide itself is
+typeset with `neudata_pdf()`, the same output format.
+
+\vfill
+
+\footnotesize
+Produced with quant2qual `r as.character(utils::packageVersion("quant2qual"))`
+on `r format(Sys.Date(), "%d %B %Y")`. Source:
+`inst/pipeline/quant2qual-pipeline.Rmd`. Rebuild with
+`rmarkdown::render(system.file("pipeline", "quant2qual-pipeline.Rmd", package = "quant2qual"))`.

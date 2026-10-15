@@ -1,0 +1,25 @@
+/* quant2qual: Neudata house style for HTML reports */
+:root {
+  --nd-teal: #055F56;
+  --nd-blue: #0B376C;
+  --nd-navy: #04242F;
+  --nd-mist: #EAF2F5;
+  --nd-grey: #8A99A3;
+  --nd-ink: #1F2D33;
+}
+body { color: var(--nd-ink); font-family: "Source Sans 3", "Segoe UI", Arial, sans-serif; line-height: 1.55; }
+h1.title { color: var(--nd-navy); font-weight: 800; border-bottom: 4px solid var(--nd-teal); padding-bottom: .3rem; }
+h3.subtitle { color: var(--nd-teal); }
+h1, h2 { color: var(--nd-navy); }
+h2 { border-bottom: 2px solid var(--nd-teal); padding-bottom: .2rem; margin-top: 2rem; }
+h3 { color: var(--nd-blue); }
+a { color: var(--nd-blue); }
+table { border-collapse: collapse; margin: 1rem 0; font-size: .92em; }
+thead th { background: var(--nd-navy); color: #fff; padding: .35rem .6rem; }
+tbody td { padding: .3rem .6rem; }
+tbody tr:nth-child(even) { background: var(--nd-mist); }
+.keyfindings { background: var(--nd-mist); border-left: 4px solid var(--nd-teal); padding: .6rem 1rem; margin: 1rem 0; }
+.keyfindings > p:first-child { font-weight: 700; color: var(--nd-navy); margin-top: 0; }
+.neudatanote { border: 1px solid #9DB1CC; border-radius: 3px; padding: .6rem 1rem; margin: 1rem 0; }
+.neudatanote > p:first-child { font-weight: 700; color: var(--nd-blue); margin-top: 0; }
+.q2q-footer { margin-top: 3rem; border-top: 4px solid var(--nd-teal); padding-top: .6rem; color: var(--nd-grey); font-size: .85em; }

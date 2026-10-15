@@ -1,0 +1,11 @@
+.Rproj.user/
+.Rhistory
+.RData
+.Renviron
+docs/
+inst/doc
+*.tar.gz
+*.Rcheck/
+*.knit.md
+*.log
+inst/pipeline/*.tex

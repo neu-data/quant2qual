@@ -1,0 +1,97 @@
+---
+title: "Writing behavioral reports"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Writing behavioral reports}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>")
+```
+
+```{r setup}
+library(quant2qual)
+profile <- identify_archetype(mock_behavioral_data(200))
+```
+
+`write_behavioral_report()` assembles one document in a fixed, readable order:
+
+1. **Key findings** -- dominant signature, friction-led share, classification
+   confidence and outliers, in a highlighted box.
+2. **Cohort synthesis** -- the cohort narrative, the archetype map, the
+   signature chart, a summary table and a portrait of every archetype.
+3. **Case studies** -- one narrative per selected case, each with its
+   behavioral fingerprint chart.
+4. **Methods** -- written from the classification settings: the scaling, the
+   band edges in raw units, the archetype matrix and a reproducibility note.
+
+## Formats
+
+| `format` | Output | Needs |
+|---|---|---|
+| `"markdown"` | pandoc Markdown (returned as text when `file = NULL`) | nothing |
+| `"rmd"` | R Markdown source rendering with `quant2qual::neudata_pdf` | nothing to write |
+| `"qmd"` | Quarto source declaring HTML and PDF formats | nothing to write |
+| `"html"` | self-contained HTML in the Neudata palette | pandoc |
+| `"pdf"` | PDF typeset with the Neudata LaTeX class | pandoc and LaTeX |
+
+```{r markdown}
+md <- write_behavioral_report(profile, ids = c(104, 105), style = "brief",
+                              include_methods = FALSE)
+cat(md)
+```
+
+Sources are written with their figures beside them, ready to edit:
+
+```{r sources}
+dir <- tempfile()
+dir.create(dir)
+write_behavioral_report(profile, file = file.path(dir, "study.Rmd"), format = "rmd")
+list.files(dir, recursive = TRUE)
+```
+
+## The PDF house style
+
+PDF output uses `neudata_pdf()`, an R Markdown format built on the Neudata LaTeX
+class: a cover page with the client, reference and classification, branded
+headers and footers, navy table headers, highlighted key-finding boxes and the
+closing copyright page.
+
+```{r pdf, eval = FALSE}
+write_behavioral_report(
+  profile,
+  file = "onboarding-study.pdf",
+  format = "pdf",
+  title = "Onboarding friction study",
+  subtitle = "Behavioral case studies from the March cohort",
+  client = "Example Ltd",
+  reference = "NDC-2026-014",
+  confidentiality = "Confidential",
+  pdf_style = "style1"
+)
+```
+
+`neudata_pdf()` can be used by any R Markdown document:
+
+```yaml
+output:
+  quant2qual::neudata_pdf:
+    toc: true
+    style: style2
+client: "Example Ltd"
+confidentiality: "Internal"
+```
+
+## The R Markdown template
+
+In RStudio, **File > New File > R Markdown > From Template > quant2qual
+behavioral report** opens a parameterised report that reads a CSV, classifies
+it and writes the narratives -- a starting point for studies that need more
+than the automatic report. The same skeleton is available with:
+
+```{r skeleton, eval = FALSE}
+rmarkdown::draft("my-study.Rmd", template = "behavioral_report",
+                 package = "quant2qual")
+```

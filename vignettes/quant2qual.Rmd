@@ -1,0 +1,144 @@
+---
+title: "Getting started with quant2qual"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Getting started with quant2qual}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.6)
+```
+
+`quant2qual` turns behavioral numbers into the kind of prose found in a clinical
+or UX case study. It does this in three steps, each a function you can run and
+inspect on its own:
+
+1. **Classify** -- `identify_archetype()` places every case on three behavioral
+   dimensions and matches it to an archetype.
+2. **Narrate** -- `generate_narrative()` writes a case study for a chosen case;
+   `generate_cohort_narrative()` writes the cohort synthesis.
+3. **Report** -- `write_behavioral_report()` compiles both into Markdown,
+   R Markdown, Quarto, HTML or a Neudata-styled PDF.
+
+Everything is rule-based and runs locally: no API, no model, and the same data
+always produce the same text.
+
+```{r setup}
+library(quant2qual)
+```
+
+## The three dimensions
+
+Every domain is described on the same three axes:
+
+| Dimension | Measures | UX example | Learning example | Survey example |
+|---|---|---|---|---|
+| **velocity** | time invested | session minutes | time on task | completion time |
+| **intensity** | volume of activity | clicks | learning activities | open-text words |
+| **friction** | signs of difficulty | errors | failed attempts | quality flags |
+
+## Data
+
+`mock_behavioral_data()` simulates a cohort from a known mixture of signatures,
+which makes it useful for learning the package and for checking that the
+classifier recovers what was planted.
+
+```{r data}
+users <- mock_behavioral_data(200)
+users
+```
+
+## Step 1: classify
+
+```{r classify}
+profile <- identify_archetype(users)
+profile
+```
+
+Each case gains standardised scores (`z_*`), percentile ranks (`pct_*`), a band
+for each dimension (`level_*`), the assigned `archetype`, a `confidence` and the
+closest competing archetype (`runner_up`). `summary()` describes the archetypes:
+
+```{r summary}
+summary(profile)
+```
+
+```{r map, fig.alt = "Scatter plot of standardised session duration against interaction volume, coloured by archetype."}
+plot_archetype_map(profile, highlight = 104)
+```
+
+The dashed lines are the band edges the classifier used. The tile chart shows
+the empirical signature of each archetype, which is the quickest way to check
+that the rules carve the data into groups that really differ:
+
+```{r signatures, fig.height = 3.4, fig.alt = "Tile chart of mean standardised scores by archetype and dimension."}
+plot_archetype_signatures(profile)
+```
+
+## Step 2: narrate
+
+```{r narrative}
+generate_narrative(profile, id = 104)
+```
+
+Three registers are available. `"ux"` drops the statistics and ends in
+recommended actions; `"brief"` gives one paragraph:
+
+```{r brief}
+generate_narrative(profile, id = 104, style = "brief")
+```
+
+`select_cases()` picks exemplars so you do not have to: the clearest example of
+each archetype by default, or the most extreme, or the most borderline.
+
+```{r select}
+ids <- select_cases(profile)
+ids
+generate_narrative(profile, ids[1:2], style = "ux")
+```
+
+The cohort synthesis describes the whole distribution: who dominates, how much
+of the cohort is friction-led, how concentrated friction is, how the
+dimensions relate and how cleanly the cohort was classified.
+
+```{r cohort}
+generate_cohort_narrative(profile)
+```
+
+```{r case-plot, fig.height = 2.6, fig.alt = "Dot plot of one case's standardised scores over the cohort's box plots."}
+plot_case_profile(profile, 104)
+```
+
+## Step 3: report
+
+```{r report}
+md <- write_behavioral_report(profile, style = "brief")
+cat(substr(md, 1, 900))
+```
+
+The same report renders to PDF in the Neudata house style (this needs pandoc
+and a LaTeX installation such as TinyTeX):
+
+```{r pdf, eval = FALSE}
+write_behavioral_report(
+  profile,
+  file = "behavioral-report.pdf",
+  format = "pdf",
+  title = "Checkout usability study",
+  client = "Example Ltd",
+  confidentiality = "Confidential"
+)
+```
+
+## Where next
+
+* `vignette("archetype-engine")` -- scaling, thresholds, cutpoints, custom
+  archetypes and how confidence is computed.
+* `vignette("domains")` -- learning analytics, survey paradata and adapting the
+  vocabulary.
+* `vignette("reports")` -- report formats, the PDF template and the R Markdown
+  template.
+* The PDF pipeline guide:
+  `system.file("pipeline", "quant2qual-pipeline.pdf", package = "quant2qual")`.

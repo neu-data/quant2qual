@@ -1,0 +1,104 @@
+---
+title: "Domains: UX, learning analytics and survey paradata"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Domains: UX, learning analytics and survey paradata}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", fig.width = 7, fig.height = 4.4)
+```
+
+```{r setup}
+library(quant2qual)
+```
+
+The engine only ever sees three standardised dimensions. What makes a narrative
+read like a usability case study rather than a learner profile or a
+response-quality audit is **vocabulary** and **interpretation**, and both live
+in a domain pack.
+
+```{r domains}
+q2q_domains()
+```
+
+All three packs share one rule geometry, named in their own terms:
+
+| Signature | UX | Learning | Survey |
+|---|---|---|---|
+| Obstructed persistence | Frustrated Fighter | Struggling Persister | Effortful Struggler |
+| Early exit under friction | Frustrated Novice | At-Risk Withdrawer | Careless Speeder |
+| Deliberate depth | Methodical Explorer | Deep Learner | Deliberative Responder |
+| Fluent expertise | Power Navigator | Efficient Achiever | Efficient Responder |
+| Shallow contact | Passive Disengaged | Surface Engager | Minimal Responder |
+| Cohort-typical | Baseline User | Steady Learner | Typical Responder |
+
+## Learning analytics
+
+```{r learning}
+learners <- mock_behavioral_data(180, domain = "learning")
+lp <- identify_archetype(learners, domain = "learning")
+summary(lp)
+generate_narrative(lp, select_cases(lp, archetypes = "At-Risk Withdrawer"), style = "ux")
+```
+
+## Survey paradata and response quality
+
+In the survey pack, *friction* is the number of failed attention and
+consistency checks, and the interpretation draws on the satisficing and
+insufficient-effort-responding literature. Note how it distinguishes a fast
+respondent who writes well and passes checks (*Efficient Responder*) from one
+who is fast, terse and fails them (*Careless Speeder*): speed alone is not
+treated as poor quality.
+
+```{r survey}
+resp <- mock_behavioral_data(250, domain = "survey")
+sp <- identify_archetype(resp, domain = "survey", scaling = "robust")
+generate_narrative(sp, select_cases(sp, archetypes = "Careless Speeder"))
+```
+
+## Adapting the vocabulary
+
+A lexicon can be overridden piece by piece. Here the UX pack is adapted to a
+study of clinicians using an electronic health record:
+
+```{r lexicon}
+ehr <- q2q_lexicon(
+  "ux",
+  subject = "the clinician", subject_short = "clinician", subject_plural = "clinicians",
+  case_label = "Clinician Profile",
+  dimensions = list(intensity = list(noun = "order-entry activity", unit = "orders")),
+  pace = list(noun = "ordering rate", unit = "orders per minute"),
+  rate = list(noun = "alert rate", unit = "alerts per 100 orders")
+)
+ehr
+```
+
+Pass it when classifying, so that the narratives and reports use it throughout:
+
+```{r ehr}
+p <- identify_archetype(mock_behavioral_data(150), lexicon = ehr)
+generate_narrative(p, 104, style = "ux")
+```
+
+## Your own column names
+
+The defaults come from the lexicon, but any columns can be mapped:
+
+```{r columns}
+logs <- data.frame(
+  session = sprintf("S%03d", 1:60),
+  seconds = round(stats::rlnorm(60, log(600), 0.5)),
+  taps = stats::rpois(60, 80),
+  crashes = stats::rpois(60, 1)
+)
+p <- identify_archetype(logs, velocity = "seconds", intensity = "taps",
+                        friction = "crashes", id = "session",
+                        lexicon = q2q_lexicon("ux", dimensions = list(
+                          velocity = list(unit = "seconds"),
+                          intensity = list(unit = "taps"),
+                          friction = list(noun = "app crashes", unit = "crashes"))))
+generate_narrative(p, "S001", style = "brief")
+```

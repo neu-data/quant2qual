@@ -1,0 +1,68 @@
+---
+title: "Behavioral Case-Study Report"
+subtitle: "Qualitative narratives from behavioral metrics"
+author: "Neudata Consulting Ltd"
+client: "Client organisation"
+confidentiality: "Confidential"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output:
+  quant2qual::neudata_pdf:
+    toc: true
+params:
+  data: ""
+  domain: "ux"
+  style: "clinical"
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE,
+                      fig.align = "center", out.width = "95%")
+library(quant2qual)
+
+# Point params$data at a CSV with one row per case. Leave it empty to use the
+# simulated cohort shipped with the package.
+cases <- if (nzchar(params$data)) {
+  utils::read.csv(params$data)
+} else {
+  mock_behavioral_data(200, domain = params$domain)
+}
+profile <- identify_archetype(cases, domain = params$domain)
+```
+
+# Key findings
+
+```{r findings, results = "asis"}
+cn <- generate_cohort_narrative(profile)
+cat(cn$sections$overview, "\n\n", cn$sections$friction)
+```
+
+# Cohort synthesis
+
+```{r synthesis, results = "asis"}
+cat(cn$sections$relationships, "\n\n", cn$sections$confidence)
+```
+
+```{r map, fig.width = 7, fig.height = 4.6, fig.cap = "Archetype map"}
+plot_archetype_map(profile)
+```
+
+```{r signatures, fig.width = 7, fig.height = 3.4, fig.cap = "Archetype signatures"}
+plot_archetype_signatures(profile)
+```
+
+# Case studies
+
+```{r cases, results = "asis"}
+for (id in select_cases(profile)) {
+  cat(format(generate_narrative(profile, id, style = params$style), heading_level = 2),
+      "\n\n")
+}
+```
+
+# Methods
+
+Behavior was described on three dimensions (time, activity and friction),
+standardised against the cohort and banded at half a standard deviation.
+Each case was matched against the `r params$domain` archetype matrix, and its
+narrative was assembled by rule-based templating from its own statistics with
+quant2qual `r as.character(utils::packageVersion("quant2qual"))`.
